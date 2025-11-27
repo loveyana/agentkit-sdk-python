@@ -1,4 +1,4 @@
-# Build stage - 支持自定义构建镜像
+# Build stage - Support custom image
 {% if base_image_builder %}
 FROM {{ base_image_builder }} AS builder
 {% else %}
@@ -25,7 +25,6 @@ ENV GO_VERSION=1.24 \
 # download modules if go.mod present
 RUN if [ -f go.mod ]; then go mod download; fi
 
-# 执行自定义构建脚本（如需安装编译依赖、证书等）
 {% if build_script %}
 RUN chmod +x {{ build_script }} && /bin/sh {{ build_script }}
 {% endif %}
@@ -40,7 +39,7 @@ RUN mkdir -p ${BUILD_OUTPUT_DIR} && /bin/sh {{ entry_relative_path }}
 RUN mkdir -p ${BUILD_OUTPUT_DIR} && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ${BUILD_OUTPUT_DIR}/${BUILD_BINARY_NAME} {{ entry_relative_path }}
 {% endif %}
 
-# Runtime stage - 支持自定义运行时镜像
+# Runtime stage - Support custom image
 {% if base_image_runtime %}
 FROM {{ base_image_runtime }}
 {% else %}

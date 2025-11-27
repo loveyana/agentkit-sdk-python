@@ -26,7 +26,7 @@ from agentkit.toolkit.config.dataclass_utils import AutoSerializableMixin
 from agentkit.toolkit.models import BuildResult, ImageInfo
 from agentkit.toolkit.reporter import Reporter
 from agentkit.toolkit.errors import ErrorCode
-from agentkit.utils.misc import generate_random_id
+from agentkit.utils.misc import generate_random_id, calculate_nonlinear_progress
 from agentkit.toolkit.volcengine.services import CRServiceConfig
 from .base import Builder
 
@@ -1056,8 +1056,9 @@ class VeCPCRBuilder(Builder):
             self.reporter.info("Waiting for build completion...")
             
             # Wait for build completion using reporter's long task interface
-            max_wait_time = 600  # 10 minutes
+            max_wait_time = 900  # 15 minutes
             check_interval = 3  # Check every 3 seconds
+            expected_time = 30  # Controls progress curve speed (smaller = faster initial progress)
             import time
             start_time = time.time()
             
@@ -1098,8 +1099,7 @@ class VeCPCRBuilder(Builder):
                                 download_and_show_logs(run_id)
                                 raise Exception(error_msg)
                             
-                            # Update progress (time-based)
-                            task.update(completed=min(elapsed_time, max_wait_time))
+                            task.update(completed=calculate_nonlinear_progress(elapsed_time, max_wait_time, expected_time))
                             time.sleep(check_interval)
                         else:
                             # Unknown status
@@ -1111,8 +1111,7 @@ class VeCPCRBuilder(Builder):
                                 download_and_show_logs(run_id)
                                 raise Exception(error_msg)
                             
-                            # Update progress
-                            task.update(completed=min(elapsed_time, max_wait_time))
+                            task.update(completed=calculate_nonlinear_progress(elapsed_time, max_wait_time, expected_time))
                             time.sleep(check_interval)
                             
                     except Exception:
