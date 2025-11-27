@@ -20,9 +20,9 @@ Error handling, progress reporting, and logging are handled by the Executor laye
 """
 
 from typing import Any, Optional
-from agentkit.toolkit.strategies.base import Strategy
+from agentkit.toolkit.strategies.base_strategy import Strategy
 from agentkit.toolkit.models import BuildResult, DeployResult, InvokeResult, StatusResult
-from agentkit.toolkit.config import CommonConfig, LocalDockerConfig, merge_runtime_envs
+from agentkit.toolkit.config import CommonConfig, LocalStrategyConfig, merge_runtime_envs
 from agentkit.toolkit.builders.local_docker import (
     LocalDockerBuilder, LocalDockerBuilderConfig
 )
@@ -82,7 +82,7 @@ class LocalStrategy(Strategy):
             self._runner = LocalDockerRunner(reporter=self.reporter)
         return self._runner
     
-    def build(self, common_config: CommonConfig, strategy_config: LocalDockerConfig) -> BuildResult:
+    def build(self, common_config: CommonConfig, strategy_config: LocalStrategyConfig) -> BuildResult:
         """
         Execute local Docker build.
         
@@ -112,7 +112,7 @@ class LocalStrategy(Strategy):
         
         return result
     
-    def deploy(self, common_config: CommonConfig, strategy_config: LocalDockerConfig) -> DeployResult:
+    def deploy(self, common_config: CommonConfig, strategy_config: LocalStrategyConfig) -> DeployResult:
         """
         Execute local Docker deployment.
         
@@ -147,7 +147,7 @@ class LocalStrategy(Strategy):
         
         return result
     
-    def invoke(self, common_config: CommonConfig, strategy_config: LocalDockerConfig,
+    def invoke(self, common_config: CommonConfig, strategy_config: LocalStrategyConfig,
                payload: Any, headers: Optional[dict] = None,
                stream: Optional[bool] = None) -> InvokeResult:
         """
@@ -166,7 +166,7 @@ class LocalStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.invoke(runner_config, payload, headers, stream)
     
-    def status(self, common_config: CommonConfig, strategy_config: LocalDockerConfig) -> StatusResult:
+    def status(self, common_config: CommonConfig, strategy_config: LocalStrategyConfig) -> StatusResult:
         """
         Query the service status.
         
@@ -176,7 +176,7 @@ class LocalStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.status(runner_config)
     
-    def stop(self, common_config: CommonConfig, strategy_config: LocalDockerConfig) -> bool:
+    def stop(self, common_config: CommonConfig, strategy_config: LocalStrategyConfig) -> bool:
         """
         Stop the container without destroying it.
         
@@ -186,7 +186,7 @@ class LocalStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.stop(runner_config)
     
-    def destroy(self, common_config: CommonConfig, strategy_config: LocalDockerConfig, force: bool = False) -> bool:
+    def destroy(self, common_config: CommonConfig, strategy_config: LocalStrategyConfig, force: bool = False) -> bool:
         """
         Destroy the container and related resources.
         
@@ -200,7 +200,7 @@ class LocalStrategy(Strategy):
         return self.runner.destroy(runner_config)
     
     def _to_builder_config(self, common_config: CommonConfig,
-                           strategy_config: LocalDockerConfig) -> LocalDockerBuilderConfig:
+                           strategy_config: LocalStrategyConfig) -> LocalDockerBuilderConfig:
         """
         Convert configuration to builder format.
         
@@ -219,7 +219,7 @@ class LocalStrategy(Strategy):
         )
     
     def _to_runner_config(self, common_config: CommonConfig,
-                          strategy_config: LocalDockerConfig) -> LocalDockerRunnerConfig:
+                          strategy_config: LocalStrategyConfig) -> LocalDockerRunnerConfig:
         """
         Convert configuration to runner format.
         

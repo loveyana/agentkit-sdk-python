@@ -354,14 +354,14 @@ class AgentkitConfigManager:
         
         config_class = None
         if strategy_name == "local":
-            from agentkit.toolkit.config import LocalDockerConfig
-            config_class = LocalDockerConfig
+            from agentkit.toolkit.config import LocalStrategyConfig
+            config_class = LocalStrategyConfig
         elif strategy_name == "cloud":
-            from agentkit.toolkit.config import VeAgentkitConfig
-            config_class = VeAgentkitConfig
+            from agentkit.toolkit.config import CloudStrategyConfig
+            config_class = CloudStrategyConfig
         elif strategy_name == "hybrid":
-            from agentkit.toolkit.config import HybridVeAgentkitConfig
-            config_class = HybridVeAgentkitConfig
+            from agentkit.toolkit.config import HybridStrategyConfig
+            config_class = HybridStrategyConfig
         else:
             return config
         

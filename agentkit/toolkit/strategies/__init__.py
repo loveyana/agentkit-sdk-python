@@ -13,18 +13,19 @@
 # limitations under the License.
 
 """
-Strategy 层 - 纯粹的编排逻辑
+Strategy Layer - Pure orchestration logic.
 
-Strategy 层只负责编排 Builder 和 Runner 的调用顺序，不包含：
-- 错误处理（由 Executor 处理）
-- 进度报告（由 Executor 处理）
-- 日志记录（由 Executor 处理）
-- 结果转换（Builder/Runner 直接返回标准 Result）
+Strategies coordinate Builder and Runner calls without side effects.
+All cross-cutting concerns are handled by the Executor layer:
+- Error handling and recovery
+- Progress reporting to users
+- Logging and telemetry
+- Result transformation
 
-Strategy 是纯函数式的编排，易于测试和理解。
+This separation keeps strategies pure, testable, and easy to reason about.
 """
 
-from .base import Strategy
+from .base_strategy import Strategy
 from .local_strategy import LocalStrategy
 from .cloud_strategy import CloudStrategy
 from .hybrid_strategy import HybridStrategy

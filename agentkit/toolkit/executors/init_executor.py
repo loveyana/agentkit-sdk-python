@@ -12,7 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Init Executor - Project initialization executor."""
+"""Init Executor - Handles agent project initialization and scaffolding.
+
+This executor provides two initialization modes:
+1. Template-based: Create new projects from predefined templates (basic, basic_stream, a2a)
+2. Wrapper-based: Wrap existing agent files into deployable projects
+
+Key responsibilities:
+- Project structure scaffolding
+- Configuration file generation (agentkit.yaml)
+- Template rendering with Jinja2
+- Global config fallback for cloud resources (CR, TOS)
+"""
 
 import random
 import re
@@ -29,22 +40,21 @@ from agentkit.toolkit.config import (
     get_config,
     DEFAULT_IMAGE_TAG,
     DEFAULT_CR_NAMESPACE,
-    LocalDockerConfig,
-    VeAgentkitConfig,
-    HybridVeAgentkitConfig,
+    LocalStrategyConfig,
+    CloudStrategyConfig,
+    HybridStrategyConfig,
     global_config_exists,
     get_global_config,
 )
 
 
-# 模板元数据配置
 TEMPLATES = {
     "basic": {
         "file": "basic.py",
         "name": "Basic Agent App",
         "language": "Python",
         "language_version": "3.12",
-        "description": "最简单的Agent应用，快速上手",
+        "description": "Minimal agent app for quick start",
         "type": "Basic App",
     },
     "basic_stream": {
@@ -52,7 +62,7 @@ TEMPLATES = {
         "name": "Basic Stream Agent App",
         "language": "Python",
         "language_version": "3.12",
-        "description": "支持流式输出的Agent应用",
+        "description": "Agent app with streaming output support",
         "type": "Stream App",
         "extra_requirements": ["# google-adk"],
     },
@@ -61,7 +71,7 @@ TEMPLATES = {
         "name": "A2A Agent App",
         "language": "Python",
         "language_version": "3.12",
-        "description": "支持A2A协议的Agent应用",
+        "description": "Agent app with A2A protocol support",
         "type": "A2A App",
         "extra_requirements": ["# google-adk"],
     },
@@ -70,7 +80,7 @@ TEMPLATES = {
         "name": "Eino A2A Agent App",
         "language": "Golang",
         "language_version": "1.24",
-        "description": "基于Eino框架的A2A应用",
+        "description": "A2A Application Based on the Eino Framework",
         "type": "A2A App",
     },
 }
@@ -108,7 +118,7 @@ class InitExecutor(BaseExecutor):
         
         Args:
             project_name: Name of the project.
-            template: Template to use (basic, basic_stream, eino_a2a).
+            template: Template to use (basic, basic_stream, a2a).
             directory: Target directory for the project.
             agent_name: Agent name (optional).
             description: Agent description (optional).
@@ -122,7 +132,6 @@ class InitExecutor(BaseExecutor):
         try:
             self.created_files = []
             
-            # Validate project name
             if not re.match(r'^[a-zA-Z0-9_-]+$', project_name):
                 return InitResult(
                     success=False,
@@ -130,7 +139,6 @@ class InitExecutor(BaseExecutor):
                     error_code="INVALID_CONFIG"
                 )
             
-            # Validate template
             if template not in TEMPLATES:
                 return InitResult(
                     success=False,
@@ -142,7 +150,6 @@ class InitExecutor(BaseExecutor):
             language = template_info['language']
             language_version = template_info['language_version']
             
-            # Prepare target directory
             target_dir = Path(directory).resolve()
             if not target_dir.exists():
                 target_dir.mkdir(parents=True, exist_ok=True)
@@ -154,7 +161,6 @@ class InitExecutor(BaseExecutor):
                     error_code="INVALID_CONFIG"
                 )
             
-            # Determine file names
             if language == "Python":
                 file_name = f"{project_name}.py"
                 dependencies_file_path = target_dir / "requirements.txt"
@@ -171,9 +177,7 @@ class InitExecutor(BaseExecutor):
             agent_file_path = target_dir / file_name
             config_file_path = target_dir / "agentkit.yaml"
             
-            # Get template source
             source_key = template_info.get("file") or template_info.get("filepath")
-            # Get the path relative to this service file
             service_dir = Path(__file__).parent
             source_path = service_dir.parent / "resources" / "samples" / source_key
             
@@ -184,28 +188,22 @@ class InitExecutor(BaseExecutor):
                     error_code="FILE_NOT_FOUND"
                 )
             
-            # Build render context
             render_context = self._build_render_context(
                 agent_name, description, system_prompt, model_name, tools
             )
             
-            # Copy template files
             if source_path.is_dir():
-                # Directory template
                 self._copy_template_directory(source_path, target_dir, language, render_context)
             else:
-                # Single file template
                 self._copy_template_file(
                     source_path, agent_file_path, language, render_context
                 )
             
-            # Create dependencies file
             self._create_dependencies_file(
                 dependencies_file_path, language, language_version, 
                 template_info, project_name, target_dir
             )
             
-            # Determine entry point
             if language == "Golang":
                 if (target_dir / "build.sh").exists():
                     entry_point_name = "build.sh"
@@ -214,7 +212,6 @@ class InitExecutor(BaseExecutor):
             else:
                 entry_point_name = file_name
             
-            # Create agentkit.yaml
             if not config_file_path.exists():
                 self._create_config_file(
                     config_file_path=config_file_path,
@@ -230,7 +227,6 @@ class InitExecutor(BaseExecutor):
             else:
                 self.logger.info("File agentkit.yaml already exists, skipping")
             
-            # Create .dockerignore
             self._create_dockerignore(target_dir)
             
             return InitResult(
@@ -299,7 +295,6 @@ class InitExecutor(BaseExecutor):
                 shutil.copy2(item, dest)
             self.created_files.append(item.name)
         
-        # Render Go templates if needed
         if language.lower() == "golang":
             self._render_go_agent_templates(target_dir, render_context)
     
@@ -316,7 +311,6 @@ class InitExecutor(BaseExecutor):
             return
         
         if language.lower() == "python":
-            # Render Python template
             try:
                 import jinja2
             except ImportError:
@@ -418,19 +412,20 @@ class InitExecutor(BaseExecutor):
     def _setup_config_launch_type(self, config_manager, common_config):
         """
         Setup launch type specific configurations (local, cloud, or hybrid).
-        如果全局配置中有相关字段，则生成空值；否则使用默认值。
-        This is shared logic for both template and wrapper modes.
+        
+        For cloud resources (CR, TOS), if a global config value exists, the project-level
+        field is left empty so it inherits from global config at runtime. Otherwise,
+        default templates are generated.
         """
-        # 尝试加载全局配置
         global_config = None
         if global_config_exists():
             try:
                 global_config = get_global_config()
             except Exception as e:
-                self.logger.debug(f"加载全局配置失败: {e}")
+                self.logger.debug(f"Failed to load global config: {e}")
         
         if common_config.launch_type == 'local':
-            local_config = LocalDockerConfig.from_dict(
+            local_config = LocalStrategyConfig.from_dict(
                 config_manager.get_strategy_config(common_config.launch_type)
             )
             random_port = random.randint(1024, 49151)
@@ -439,45 +434,41 @@ class InitExecutor(BaseExecutor):
             config_manager.update_strategy_config(common_config.launch_type, local_config.to_dict())
             
         elif common_config.launch_type == 'cloud':
-            from agentkit.toolkit.volcengine.services import TOSService,CRService
+            from agentkit.toolkit.volcengine.services import TOSService, CRService
             
-            # 直接创建配置对象，不使用 from_dict()，避免自动注入全局配置
-            cloud_config = VeAgentkitConfig()
+            # Create config directly to avoid auto-injection from global config
+            cloud_config = CloudStrategyConfig()
             
-            # CR Instance Name - 字段级判断
+            # Empty string means "inherit from global config at runtime"
             if global_config and global_config.cr.instance_name:
                 cloud_config.cr_instance_name = ""
-                self.logger.info("检测到全局 CR Instance 配置")
+                self.logger.debug("Using global CR instance config")
             else:
                 cloud_config.cr_instance_name = CRService.default_cr_instance_name_template()
             
-            # CR Namespace Name - 字段级判断
             if global_config and global_config.cr.namespace_name:
                 cloud_config.cr_namespace_name = ""
-                self.logger.info("检测到全局 CR Namespace 配置")
+                self.logger.debug("Using global CR namespace config")
             else:
                 cloud_config.cr_namespace_name = DEFAULT_CR_NAMESPACE
             
-            # TOS Bucket - 字段级判断
             if global_config and global_config.tos.bucket:
                 cloud_config.tos_bucket = ""
-                self.logger.info("检测到全局 TOS Bucket 配置")
+                self.logger.debug("Using global TOS bucket config")
             else:
                 cloud_config.tos_bucket = TOSService.default_bucket_name_template()
             
-            # TOS Prefix - 字段级判断
             if global_config and global_config.tos.prefix:
                 cloud_config.tos_prefix = ""
             else:
                 cloud_config.tos_prefix = "agentkit-builds"
             
-            # TOS Region - 字段级判断
             if global_config and global_config.tos.region:
                 cloud_config.tos_region = ""
             else:
                 cloud_config.tos_region = "cn-beijing"
             
-            # 这些字段始终使用项目特定值
+            # Project-specific values (always set, not inherited)
             cloud_config.cr_repo_name = common_config.agent_name
             cloud_config.image_tag = DEFAULT_IMAGE_TAG
             
@@ -486,25 +477,23 @@ class InitExecutor(BaseExecutor):
         elif common_config.launch_type == 'hybrid':
             from agentkit.toolkit.volcengine.services import CRService
             
-            # 直接创建配置对象，不使用 from_dict()，避免自动注入全局配置
-            hybrid_config = HybridVeAgentkitConfig()
+            # Create config directly to avoid auto-injection from global config
+            # Hybrid mode only needs CR config (no TOS needed)
+            hybrid_config = HybridStrategyConfig()
             
-            # Hybrid 模式只需要 CR 配置
-            # CR Instance Name - 字段级判断
             if global_config and global_config.cr.instance_name:
                 hybrid_config.cr_instance_name = ""
-                self.logger.info("检测到全局 CR Instance 配置")
+                self.logger.debug("Using global CR instance config")
             else:
                 hybrid_config.cr_instance_name = CRService.default_cr_instance_name_template()
             
-            # CR Namespace Name - 字段级判断
             if global_config and global_config.cr.namespace_name:
                 hybrid_config.cr_namespace_name = ""
-                self.logger.info("检测到全局 CR Namespace 配置")
+                self.logger.debug("Using global CR namespace config")
             else:
                 hybrid_config.cr_namespace_name = DEFAULT_CR_NAMESPACE
             
-            # 这些字段始终使用项目特定值
+            # Project-specific values (always set, not inherited)
             hybrid_config.cr_repo_name = common_config.agent_name
             hybrid_config.image_tag = DEFAULT_IMAGE_TAG
             
@@ -529,7 +518,6 @@ class InitExecutor(BaseExecutor):
         config_manager = get_config(config_path=config_file_path)
         common_config = config_manager.get_common_config()
         
-        # Set common configuration
         common_config.launch_type = 'cloud'
         common_config.language = language
         common_config.language_version = language_version
@@ -540,7 +528,6 @@ class InitExecutor(BaseExecutor):
         common_config.dependencies_file = dependencies_file_name
         config_manager.update_common_config(common_config)
         
-        # Setup launch type specific configurations
         self._setup_config_launch_type(config_manager, common_config)
     
     def _create_dockerignore(self, target_dir: Path):
@@ -581,8 +568,6 @@ Dockerfile*
         dockerignore_file_path.write_text(dockerignore_content, encoding='utf-8')
         self.created_files.append(".dockerignore")
     
-    # ========== Agent File Wrapping Methods ==========
-    
     def init_from_agent_file(
         self,
         project_name: str,
@@ -607,7 +592,6 @@ Dockerfile*
         try:
             self.created_files = []
             
-            # Validate project name
             if not re.match(r'^[a-zA-Z0-9_-]+$', project_name):
                 return InitResult(
                     success=False,
@@ -616,7 +600,6 @@ Dockerfile*
                     error_code="INVALID_CONFIG"
                 )
             
-            # Validate wrapper type
             if wrapper_type not in ["basic", "stream"]:
                 return InitResult(
                     success=False,
@@ -624,13 +607,11 @@ Dockerfile*
                     error_code="INVALID_CONFIG"
                 )
             
-            # Parse the Agent file
             parser = AgentParser()
             try:
                 agent_info = parser.parse_agent_file(agent_file_path, agent_var_name)
                 self.logger.info(f"Parsed Agent file: {agent_info}")
             except (FileNotFoundError, ValueError) as e:
-                # 使用 _classify_error 统一分类错误
                 error_code = "FILE_NOT_FOUND" if isinstance(e, FileNotFoundError) else "INVALID_CONFIG"
                 return InitResult(
                     success=False,
@@ -638,7 +619,6 @@ Dockerfile*
                     error_code=error_code
                 )
             
-            # Prepare target directory
             target_dir = Path(directory).resolve()
             if not target_dir.exists():
                 target_dir.mkdir(parents=True, exist_ok=True)
@@ -650,16 +630,13 @@ Dockerfile*
                     error_code="INVALID_CONFIG"
                 )
             
-            # Copy user's Agent file to target directory
             self._copy_agent_file(agent_info, target_dir)
             
-            # Generate wrapper file
             wrapper_file_path = target_dir / f"{project_name}.py"
             self._generate_wrapper_file(
                 wrapper_file_path, agent_info, wrapper_type, project_name
             )
             
-            # Create requirements.txt
             dependencies_file_path = target_dir / "requirements.txt"
             extra_reqs = ["google-adk"] if wrapper_type == "stream" else []
             self._create_python_requirements(
@@ -668,7 +645,6 @@ Dockerfile*
                 include_usage_hints=True
             )
             
-            # Create agentkit.yaml
             config_file_path = target_dir / "agentkit.yaml"
             if not config_file_path.exists():
                 self._create_config_file(
@@ -685,7 +661,6 @@ Dockerfile*
             else:
                 self.logger.info("File agentkit.yaml already exists, skipping")
             
-            # Create .dockerignore
             self._create_dockerignore(target_dir)
             
             return InitResult(
@@ -740,24 +715,20 @@ Dockerfile*
             self.logger.info(f"File {wrapper_file_path.name} already exists, skipping")
             return
         
-        # Load wrapper template
         try:
             import jinja2
         except ImportError:
             raise ImportError("Jinja2 is required. Please install with 'pip install Jinja2'")
         
-        # Get wrapper template path
         service_dir = Path(__file__).parent
         template_path = service_dir.parent / "resources" / "wrappers" / f"wrapper_{wrapper_type}.py.jinja2"
         
         if not template_path.exists():
             raise FileNotFoundError(f"Wrapper template not found: {template_path}")
         
-        # Render template
         template_content = template_path.read_text(encoding='utf-8')
         template = jinja2.Template(template_content)
         
-        # Prepare render context
         render_context = {
             'agent_file_name': agent_info.file_name,
             'agent_module_name': agent_info.module_name,

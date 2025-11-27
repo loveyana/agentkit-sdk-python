@@ -5,7 +5,7 @@ from .constants import AUTO_CREATE_VE, DEFAULT_CR_NAMESPACE, DEFAULT_IMAGE_TAG, 
 
 
 @dataclass
-class LocalDockerConfig(AutoSerializableMixin):
+class LocalStrategyConfig(AutoSerializableMixin):
     """Local Docker strategy configuration for running agents in Docker containers."""
     # User-configurable fields
     image_tag: str = field(default="latest", metadata={"description": "Docker image tag", "icon": "🏷️"})
@@ -33,7 +33,7 @@ class LocalDockerConfig(AutoSerializableMixin):
         }
     )
     _config_metadata = {
-        'name': 'Local Docker Configuration',
+        'name': 'Local Strategy Configuration',
         'welcome_message': 'Welcome to AgentKit Local Docker Mode Configuration Wizard',
         'next_step_hint': 'This wizard will help you configure your agent for local Docker deployment. Please provide the required information or press Enter to use default values.',
         'completion_message': 'Great! Local Docker configuration is complete!',
@@ -42,7 +42,7 @@ class LocalDockerConfig(AutoSerializableMixin):
 
 
 @dataclass
-class HybridVeAgentkitConfig(AutoSerializableMixin):
+class HybridStrategyConfig(AutoSerializableMixin):
     """Hybrid deployment strategy configuration combining local Docker and Volcano Engine services."""
     # User-configurable fields
     image_tag: str = field(default=DEFAULT_IMAGE_TAG, metadata={"system": True, "description": "Docker image tag", "icon": "🏷️", "render_template": True})
@@ -77,7 +77,7 @@ class HybridVeAgentkitConfig(AutoSerializableMixin):
         }
     )
     _config_metadata = {
-        'name': 'Hybrid Deployment Configuration',
+        'name': 'Hybrid Strategy Configuration',
         'welcome_message': 'Welcome to AgentKit Hybrid Deployment Mode Configuration Wizard',
         'next_step_hint': 'This wizard will help you configure your agent for hybrid deployment combining local Docker and Volcano Engine services. Please provide the required information or press Enter to use default values.',
         'completion_message': 'Great! Hybrid deployment configuration is complete!',
@@ -87,7 +87,7 @@ class HybridVeAgentkitConfig(AutoSerializableMixin):
 
 
 @dataclass
-class VeAgentkitConfig(AutoSerializableMixin):
+class CloudStrategyConfig(AutoSerializableMixin):
     """Cloud build and deployment strategy configuration for Volcano Engine."""
     region: str = field(
         default="cn-beijing", 

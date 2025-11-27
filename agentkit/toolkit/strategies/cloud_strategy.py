@@ -20,12 +20,12 @@ Error handling, progress reporting, and logging are handled by the Executor laye
 """
 
 from typing import Any, Optional
-from agentkit.toolkit.strategies.base import Strategy
+from agentkit.toolkit.strategies.base_strategy import Strategy
 from agentkit.toolkit.models import BuildResult, DeployResult, InvokeResult, StatusResult
 from agentkit.toolkit.config import (
     AUTO_CREATE_VE,
     CommonConfig,
-    VeAgentkitConfig,
+    CloudStrategyConfig,
     merge_runtime_envs
 )
 from agentkit.toolkit.builders.ve_pipeline import (
@@ -88,7 +88,7 @@ class CloudStrategy(Strategy):
             self._runner = VeAgentkitRuntimeRunner(reporter=self.reporter)
         return self._runner
     
-    def build(self, common_config: CommonConfig, strategy_config: VeAgentkitConfig) -> BuildResult:
+    def build(self, common_config: CommonConfig, strategy_config: CloudStrategyConfig) -> BuildResult:
         """
         Execute cloud build orchestration.
         
@@ -134,7 +134,7 @@ class CloudStrategy(Strategy):
         result.config_updates = config_updates if config_updates.has_updates() else None
         return result
     
-    def deploy(self, common_config: CommonConfig, strategy_config: VeAgentkitConfig) -> DeployResult:
+    def deploy(self, common_config: CommonConfig, strategy_config: CloudStrategyConfig) -> DeployResult:
         """
         Execute cloud deployment orchestration.
         
@@ -168,7 +168,7 @@ class CloudStrategy(Strategy):
         result.config_updates = config_updates if config_updates.has_updates() else None
         return result
     
-    def invoke(self, common_config: CommonConfig, strategy_config: VeAgentkitConfig,
+    def invoke(self, common_config: CommonConfig, strategy_config: CloudStrategyConfig,
                payload: Any, headers: Optional[dict] = None,
                stream: Optional[bool] = None) -> InvokeResult:
         """
@@ -181,7 +181,7 @@ class CloudStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.invoke(runner_config, payload, headers, stream)
     
-    def status(self, common_config: CommonConfig, strategy_config: VeAgentkitConfig) -> StatusResult:
+    def status(self, common_config: CommonConfig, strategy_config: CloudStrategyConfig) -> StatusResult:
         """
         Query service status.
         
@@ -192,7 +192,7 @@ class CloudStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.status(runner_config)
     
-    def destroy(self, common_config: CommonConfig, strategy_config: VeAgentkitConfig, force: bool = False) -> bool:
+    def destroy(self, common_config: CommonConfig, strategy_config: CloudStrategyConfig, force: bool = False) -> bool:
         """
         Destroy cloud runtime.
         
@@ -229,7 +229,7 @@ class CloudStrategy(Strategy):
         return runtime_name, cp_pipeline_name
     
     def _to_builder_config(self, common_config: CommonConfig,
-                           strategy_config: VeAgentkitConfig,
+                           strategy_config: CloudStrategyConfig,
                            runtime_name_override: str = None,
                            cp_pipeline_name_override: str = None) -> VeCPCRBuilderConfig:
         """
@@ -267,7 +267,7 @@ class CloudStrategy(Strategy):
         )
     
     def _to_runner_config(self, common_config: CommonConfig,
-                          strategy_config: VeAgentkitConfig) -> VeAgentkitRunnerConfig:
+                          strategy_config: CloudStrategyConfig) -> VeAgentkitRunnerConfig:
         """
         Convert VeAgentkitConfig to VeAgentkitRunnerConfig.
         

@@ -243,14 +243,14 @@ class BaseExecutor:
         strategy_config_dict = config.get_strategy_config(launch_type)
         
         if launch_type == "local":
-            from agentkit.toolkit.config import LocalDockerConfig
-            return LocalDockerConfig.from_dict(strategy_config_dict, skip_render=skip_render)
+            from agentkit.toolkit.config import LocalStrategyConfig
+            return LocalStrategyConfig.from_dict(strategy_config_dict, skip_render=skip_render)
         elif launch_type == "cloud":
-            from agentkit.toolkit.config import VeAgentkitConfig
-            return VeAgentkitConfig.from_dict(strategy_config_dict, skip_render=skip_render)
+            from agentkit.toolkit.config import CloudStrategyConfig
+            return CloudStrategyConfig.from_dict(strategy_config_dict, skip_render=skip_render)
         elif launch_type == "hybrid":
-            from agentkit.toolkit.config import HybridVeAgentkitConfig
-            return HybridVeAgentkitConfig.from_dict(strategy_config_dict, skip_render=skip_render)
+            from agentkit.toolkit.config import HybridStrategyConfig
+            return HybridStrategyConfig.from_dict(strategy_config_dict, skip_render=skip_render)
         else:
             raise ValueError(f"Unknown launch_type: {launch_type}")
     
