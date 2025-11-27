@@ -167,8 +167,7 @@ cython_debug/
 uv.lock
 
 # VitePress related files (security concern - keep Markdown docs in repo)
-docs/package.json
-docs/package-lock.json
+
 docs/node_modules/
 
 # local test files
