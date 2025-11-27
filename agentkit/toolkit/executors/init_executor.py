@@ -65,14 +65,14 @@ TEMPLATES = {
         "type": "A2A App",
         "extra_requirements": ["# google-adk"],
     },
-    # "eino_a2a": {
-    #     "filepath": "eino_a2a",
-    #     "name": "Eino A2A Agent App",
-    #     "language": "Golang",
-    #     "language_version": "1.23",
-    #     "description": "基于Eino框架的A2A应用",
-    #     "type": "A2A App",
-    # },
+    "eino_a2a": {
+        "filepath": "eino_a2a",
+        "name": "Eino A2A Agent App",
+        "language": "Golang",
+        "language_version": "1.24",
+        "description": "基于Eino框架的A2A应用",
+        "type": "A2A App",
+    },
 }
 
 
@@ -410,7 +410,7 @@ class InitExecutor(BaseExecutor):
             )
             
         elif language.lower() == "golang":
-            go_ver = language_version or "1.23"
+            go_ver = language_version or "1.24"
             with open(dependencies_file_path, 'w', encoding='utf-8') as gomod:
                 gomod.write(f"module {project_name}\n\ngo {go_ver}\n")
             self.created_files.append(dependencies_file_path.name)
