@@ -62,6 +62,10 @@ class CRErrorHandler:
         return "AlreadyExists" in str(error)
     
     @staticmethod
+    def is_insufficient_balance(error: Exception) -> bool:
+        return "Insufficient.Balance" in str(error)
+    
+    @staticmethod
     def handle_auto_create_error(
         error: Exception,
         resource_type: str,
@@ -81,6 +85,8 @@ class CRErrorHandler:
         """
         if CRErrorHandler.is_quota_exceeded(error):
             result.error = f"Failed to create CR {resource_type}: account quota exceeded. Please upgrade your account quota or clean up unused CR {resource_type}s."
+        elif CRErrorHandler.is_insufficient_balance(error):
+            result.error = f"Failed to create CR {resource_type}: insufficient balance. Please ensure that you have enough balance in your account to create a container registry instance."
         else:
             result.error = f"Failed to create CR {resource_type}: {str(error)}"
         

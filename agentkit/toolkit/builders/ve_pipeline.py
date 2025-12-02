@@ -224,7 +224,7 @@ class VeCPCRBuilder(Builder):
                 if 'pipeline_id' in resources:
                     builder_config.cp_pipeline_id = resources['pipeline_id']
             
-            error_msg = f"Build failed: {str(e)}"
+            error_msg = str(e)
 
             return BuildResult(
                 success=False,
@@ -681,6 +681,8 @@ class VeCPCRBuilder(Builder):
         except Exception as e:
             if "AccountDisable" in str(e):
                 raise Exception(f"Tos Service is not enabled, please enable it in the console. Enable services at: https://console.volcengine.com/agentkit/region:agentkit+cn-beijing/auth")
+            if "TooManyBuckets" in str(e):
+                raise Exception(f"You have reached the maximum number of buckets allowed. Please delete some buckets and try again.")
             raise Exception(f"Failed to upload to TOS: {str(e)}")
     
     def _prepare_cr_resources(self, config: VeCPCRBuilderConfig) -> CRServiceConfig:
@@ -939,10 +941,10 @@ class VeCPCRBuilder(Builder):
                         {"Key": "DOCKERFILE_PATH", "Value": "/workspace/agentkit-app/Dockerfile", "Dynamic": True, "Env": True},
                         {"Key": "DOWNLOAD_PATH", "Value": "/workspace", "Dynamic": True, "Env": True},
                         {"Key": "PROJECT_ROOT_DIR", "Value": "/workspace/agentkit-app", "Dynamic": True, "Env": True},
-                        {"Key": "TOS_BUCKET_NAME", "Value": "", "Dynamic": True, "Env": True},
+                        {"Key": "TOS_BUCKET_NAME", "Value": "", "Dynamic": True},
+                        {"Key": "TOS_REGION", "Value": "", "Dynamic": True},
                         {"Key": "TOS_PROJECT_FILE_NAME", "Value": "", "Dynamic": True, "Env": True},
                         {"Key": "TOS_PROJECT_FILE_PATH", "Value": "", "Dynamic": True, "Env": True},
-                        {"Key": "TOS_REGION", "Value": "", "Dynamic": True, "Env": True},
                         {"Key": "CR_NAMESPACE", "Value": "", "Dynamic": True, "Env": True},
                         {"Key": "CR_INSTANCE", "Value": "", "Dynamic": True, "Env": True},
                         {"Key": "CR_DOMAIN", "Value": "", "Dynamic": True, "Env": True},
@@ -1032,9 +1034,9 @@ class VeCPCRBuilder(Builder):
             # Prepare build parameters for pipeline execution
             build_parameters = [
                 {"Key": "TOS_BUCKET_NAME", "Value": config.tos_bucket},
+                {"Key": "TOS_REGION", "Value": config.tos_region},
                 {"Key": "TOS_PROJECT_FILE_NAME", "Value": os.path.basename(config.tos_object_key)},
                 {"Key": "TOS_PROJECT_FILE_PATH", "Value": config.tos_object_key},
-                {"Key": "TOS_REGION", "Value": config.tos_region},
                 {"Key": "PROJECT_ROOT_DIR", "Value": f"/workspace/{agent_name}"},
                 {"Key": "DOWNLOAD_PATH", "Value": "/workspace"},
                 {"Key": "DOCKERFILE_PATH", "Value": f"/workspace/{agent_name}/Dockerfile"},

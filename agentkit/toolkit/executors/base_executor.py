@@ -428,6 +428,9 @@ class BaseExecutor:
             strategy_config['runtime_apikey'] = ""
             strategy_config['runtime_apikey_name'] = AUTO_CREATE_VE
             strategy_config['runtime_role_name'] = AUTO_CREATE_VE
+        if launch_type == 'cloud':
+            strategy_config['cp_pipeline_id'] = ""
+            strategy_config['cp_pipeline_name'] = ""
         
         config.update_strategy_config(launch_type, strategy_config)
         self.logger.debug(f"Cleared deploy config for {launch_type}")
