@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 import string
 import random
 
@@ -68,3 +69,36 @@ def generate_client_token() -> str:
         16位随机字符串
     """
     return generate_random_id(16)
+
+
+def calculate_nonlinear_progress(
+    elapsed: float, 
+    max_time: float, 
+    expected_time: float = 30.0,
+    max_ratio: float = 0.95
+) -> float:
+    """Calculate non-linear progress using exponential decay curve.
+    
+    This creates a progress bar that advances quickly at first, then slows down
+    as it approaches completion. Useful for tasks with unpredictable duration.
+    
+    Formula: progress = max_time * (1 - e^(-elapsed/expected_time))
+    
+    Example progress at different times (with expected_time=30):
+        - At 30s:  ~63%
+        - At 60s:  ~86%
+        - At 90s:  ~95%
+    
+    Args:
+        elapsed: Elapsed time in seconds.
+        max_time: Maximum time (used as progress bar total).
+        expected_time: Expected completion time, controls curve speed.
+            Smaller = faster initial progress.
+        max_ratio: Maximum progress ratio before task completes (default 0.95).
+            Prevents reaching 100% until task actually finishes.
+    
+    Returns:
+        Progress value between 0 and max_time * max_ratio.
+    """
+    progress = max_time * (1 - math.exp(-elapsed / expected_time))
+    return min(progress, max_time * max_ratio)

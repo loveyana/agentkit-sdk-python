@@ -26,7 +26,7 @@ from agentkit.toolkit.config.dataclass_utils import AutoSerializableMixin
 from agentkit.toolkit.models import DeployResult, InvokeResult, StatusResult
 from agentkit.toolkit.reporter import Reporter
 from agentkit.toolkit.errors import ErrorCode
-from agentkit.utils.misc import generate_runtime_name, generate_runtime_role_name, generate_apikey_name, generate_client_token
+from agentkit.utils.misc import generate_runtime_name, generate_runtime_role_name, generate_apikey_name, generate_client_token, calculate_nonlinear_progress
 from agentkit.sdk.runtime.client import AgentkitRuntimeClient
 import agentkit.sdk.runtime.types as runtime_types
 
@@ -594,6 +594,7 @@ class VeAgentkitRuntimeRunner(Runner):
         last_status = None
         start_time = time.time()
         total_time = timeout if timeout else 300  # For progress bar display
+        expected_time = 30  # Controls progress curve speed (smaller = faster initial progress)
         runtime = None  # Initialize runtime variable
 
         # Use reporter.long_task() for progress tracking
@@ -625,8 +626,8 @@ class VeAgentkitRuntimeRunner(Runner):
                     task.update(description=f"Runtime status: {runtime.status}")
                     last_status = runtime.status
                 
-                # Update progress
-                task.update(completed=min(elapsed_time, total_time))
+                # Update progress using non-linear curve
+                task.update(completed=calculate_nonlinear_progress(elapsed_time, total_time, expected_time))
                 
                 time.sleep(3)
     

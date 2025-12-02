@@ -20,9 +20,9 @@ from .config import (
 )
 
 from .strategy_configs import (
-    LocalDockerConfig,
-    HybridVeAgentkitConfig,
-    VeAgentkitConfig,
+    LocalStrategyConfig,
+    HybridStrategyConfig,
+    CloudStrategyConfig,
 )
 
 from .docker_build_config import (
@@ -45,14 +45,12 @@ from .utils import is_valid_config, is_invalid_config, merge_runtime_envs
 from .constants import *
 
 __all__ = [
-    # 项目配置相关
     "AgentkitConfigManager",
     "CommonConfig",
     "ConfigUpdateResult",
     "get_config",
     "create_config_update_result",
     
-    # 全局配置相关
     "GlobalConfig",
     "GlobalConfigManager",
     "get_global_config",
@@ -63,7 +61,6 @@ __all__ = [
     "CRGlobalConfig",
     "TOSGlobalConfig",
     
-    # 常量
     "AUTO_CREATE_VE",
     "DEFAULT_WORKSPACE_NAME",
     "DEFAULT_CR_NAMESPACE",
@@ -72,16 +69,13 @@ __all__ = [
     "GLOBAL_CONFIG_FILE",
     "GLOBAL_CONFIG_FILE_PERMISSIONS",
     
-    # 工具函数
     "is_valid_config",
     "is_invalid_config",
     "merge_runtime_envs",
     
-    # Strongly 配置类
-    "LocalDockerConfig",
-    "HybridVeAgentkitConfig",
-    "VeAgentkitConfig",
+    "LocalStrategyConfig",
+    "HybridStrategyConfig",
+    "CloudStrategyConfig",
     
-    # Docker构建配置
     "DockerBuildConfig",
 ]

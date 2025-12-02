@@ -42,13 +42,13 @@ class CommonConfig(AutoSerializableMixin):
     entry_point: str = field(
         default="", 
         metadata={
-            "description": "Agent application entry file (path allowed), e.g. simple_agent.py", 
+            "description": "Agent application entry file (path allowed), e.g. simple_agent.py or main.go or build.sh", 
             "icon": "📝",
             "validation": {
                 "required": True,
                 # allow relative paths with directories and either .py or .go endings
-                "pattern": r"^[\w\-/\.]+?\.(py)$",
-                "message": "Must be a Python (.py), containing only letters, numbers, underscore(_), hyphen(-), dot(.) and '/' for directories"
+                "pattern": r"^[\w\-/\.]+?\.(py|go|sh)$",
+                "message": "Must be a Python (.py) or Go (.go) file path or shell script (.sh), containing only letters, numbers, underscore(_), hyphen(-), dot(.) and '/' for directories"
             }
         }
     )
@@ -58,7 +58,7 @@ class CommonConfig(AutoSerializableMixin):
         "icon": "✏️",
         "choices": [
             {"value": "Python", "description": "Python"},
-            # {"value": "Golang", "description": "Go (Golang)"}
+            {"value": "Golang", "description": "Go (Golang)"}
         ]
     })
     language_version: str = field(
@@ -74,17 +74,16 @@ class CommonConfig(AutoSerializableMixin):
                         "choices": ["3.10", "3.11", "3.12", "3.13"],
                         "message": "Python version must be 3.10, 3.11, 3.12, or 3.13"
                     },
-                    # "Golang": {
-                    #     "pattern": r"^1\.\d+$",
-                    #     "message": "Go 版本格式应为 '1.x' (如 1.21, 1.23)",
-                    #     "hint": "[格式: 1.x]"
-                    # }
+                    "Golang": {
+                        "choices": ["1.24"],
+                        "message": "Golang version must be '1.24'",
+                    }
                 }
             }
         }
     )
     agent_type: str = field(default="Basic App", metadata={"description" : "Agent application Type", "icon": "📩", "hidden": True})
-    dependencies_file: str = field(default="requirements.txt", metadata={"description": "Agent application Dependencies file", "icon": "📦"})
+    dependencies_file: str = field(default="", metadata={"description": "Agent application Dependencies file", "icon": "📦"})
     runtime_envs: Dict[str, str] = field(
         default_factory=dict,
         metadata={
@@ -119,7 +118,7 @@ class CommonConfig(AutoSerializableMixin):
         """Return recommended language_version and dependencies_file for supported languages."""
         mapping = {
             "python": {"language_version": "3.12", "dependencies_file": "requirements.txt"},
-            "golang": {"language_version": "1.23", "dependencies_file": "go.mod"},
+            "golang": {"language_version": "1.24", "dependencies_file": "go.mod"},
         }
         return mapping.get((language or "python").lower(), mapping["python"])
     
@@ -153,7 +152,7 @@ class CommonConfig(AutoSerializableMixin):
         lv = (self.language_version or "").strip()
         df = (self.dependencies_file or "").strip()
     
-        if not lv or lv in ("3.12", "1.23") or lv.startswith("3.") and language.lower() == "go":
+        if not lv or lv in ("3.12", "1.24") or lv.startswith("3.") and language.lower() == "go":
             self.language_version = rec["language_version"]
         if not df or df in ("requirements.txt", "go.mod"):
             self.dependencies_file = rec["dependencies_file"]
@@ -355,14 +354,14 @@ class AgentkitConfigManager:
         
         config_class = None
         if strategy_name == "local":
-            from agentkit.toolkit.config import LocalDockerConfig
-            config_class = LocalDockerConfig
+            from agentkit.toolkit.config import LocalStrategyConfig
+            config_class = LocalStrategyConfig
         elif strategy_name == "cloud":
-            from agentkit.toolkit.config import VeAgentkitConfig
-            config_class = VeAgentkitConfig
+            from agentkit.toolkit.config import CloudStrategyConfig
+            config_class = CloudStrategyConfig
         elif strategy_name == "hybrid":
-            from agentkit.toolkit.config import HybridVeAgentkitConfig
-            config_class = HybridVeAgentkitConfig
+            from agentkit.toolkit.config import HybridStrategyConfig
+            config_class = HybridStrategyConfig
         else:
             return config
         

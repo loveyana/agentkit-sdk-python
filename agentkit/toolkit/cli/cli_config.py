@@ -102,7 +102,7 @@ def config_command(
         --agent_name myGoAgent \\
         --entry_point main.go \\
         --language Golang \\
-        --language_version 1.23
+        --language_version 1.24
     
     \b
     # App-level vs Strategy-level environment variables
@@ -204,16 +204,16 @@ def _interactive_config(config_file: Optional[str] = None):
     # Use CLI-layer interactive config generation
     from agentkit.toolkit.cli.interactive_config import generate_config_from_dataclass
     from agentkit.toolkit.config.strategy_configs import (
-        LocalDockerConfig,
-        VeAgentkitConfig,
-        HybridVeAgentkitConfig
+        LocalStrategyConfig,
+        CloudStrategyConfig,
+        HybridStrategyConfig
     )
     
     # Map strategy_name to config class
     strategy_config_classes = {
-        "local": LocalDockerConfig,
-        "cloud": VeAgentkitConfig,
-        "hybrid": HybridVeAgentkitConfig,
+        "local": LocalStrategyConfig,
+        "cloud": CloudStrategyConfig,
+        "hybrid": HybridStrategyConfig,
     }
     
     # Get current strategy config data

@@ -323,9 +323,11 @@ class VeIAM(BaseIAMClient):
             VikingdbReadOnlyAccess
             ESCloudReadOnlyAccess
             LLMShieldProtectSdkAccess
-            AgentKitFullAccess
+            AgentKitReadOnlyAccess
             TorchlightApiFullAccess
             Mem0ReadOnlyAccess
+            AgentKitTosAccess
+            AgentKitToolAccess
             '''
             policies = [
                 "ArkReadOnlyAccess",
@@ -334,10 +336,12 @@ class VeIAM(BaseIAMClient):
                 "VikingdbReadOnlyAccess",
                 "ESCloudReadOnlyAccess",
                 "LLMShieldProtectSdkAccess",
-                "AgentKitFullAccess",
+                "AgentKitReadOnlyAccess",
                 "TorchlightApiFullAccess",
                 "Mem0ReadOnlyAccess",
                 "IDReadOnlyAccess",
+                "AgentKitTosAccess",
+                "AgentKitToolAccess",
             ]
             for policy in policies:
                 self.attach_role_policy(role_name, policy_name=policy, policy_type="System")

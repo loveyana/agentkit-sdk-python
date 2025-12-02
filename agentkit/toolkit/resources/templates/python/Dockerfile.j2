@@ -1,4 +1,4 @@
-# 支持自定义基础镜像
+# Support custom base image
 {% if base_image %}
 FROM {{ base_image }}
 {% else %}
@@ -20,7 +20,6 @@ RUN {% if dependencies_file %}{% if dependencies_install_path %}uv pip install {
     {% endif %}{% endif %}
 {% endif %}
 
-# 执行自定义构建脚本（如需安装系统依赖、编译C扩展等）
 {% if build_script %}
 COPY {{ build_script }} /tmp/build_script.sh
 RUN chmod +x /tmp/build_script.sh && /tmp/build_script.sh && rm /tmp/build_script.sh

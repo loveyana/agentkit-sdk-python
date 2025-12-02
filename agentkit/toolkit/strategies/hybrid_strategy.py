@@ -19,12 +19,12 @@ Builds image locally, pushes to Container Registry, then deploys to VE Runtime.
 """
 
 from typing import Any, Optional
-from agentkit.toolkit.strategies.base import Strategy
+from agentkit.toolkit.strategies.base_strategy import Strategy
 from agentkit.toolkit.models import BuildResult, DeployResult, InvokeResult, StatusResult
 from agentkit.toolkit.config import (
     AUTO_CREATE_VE,
     CommonConfig,
-    HybridVeAgentkitConfig,
+    HybridStrategyConfig,
     merge_runtime_envs
 )
 from agentkit.toolkit.builders.local_docker import (
@@ -89,7 +89,7 @@ class HybridStrategy(Strategy):
             self._runner = VeAgentkitRuntimeRunner(reporter=self.reporter)
         return self._runner
     
-    def build(self, common_config: CommonConfig, strategy_config: HybridVeAgentkitConfig) -> BuildResult:
+    def build(self, common_config: CommonConfig, strategy_config: HybridStrategyConfig) -> BuildResult:
         """
         Execute hybrid build (local build + push to Container Registry).
         
@@ -123,7 +123,7 @@ class HybridStrategy(Strategy):
         result.config_updates = config_updates if config_updates.has_updates() else None
         return result
     
-    def deploy(self, common_config: CommonConfig, strategy_config: HybridVeAgentkitConfig) -> DeployResult:
+    def deploy(self, common_config: CommonConfig, strategy_config: HybridStrategyConfig) -> DeployResult:
         """
         Execute hybrid deployment to VE Runtime.
         
@@ -163,7 +163,7 @@ class HybridStrategy(Strategy):
         result.config_updates = config_updates if config_updates.has_updates() else None
         return result
     
-    def invoke(self, common_config: CommonConfig, strategy_config: HybridVeAgentkitConfig,
+    def invoke(self, common_config: CommonConfig, strategy_config: HybridStrategyConfig,
                payload: Any, headers: Optional[dict] = None,
                stream: Optional[bool] = None) -> InvokeResult:
         """
@@ -177,7 +177,7 @@ class HybridStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.invoke(runner_config, payload, headers, stream)
     
-    def status(self, common_config: CommonConfig, strategy_config: HybridVeAgentkitConfig) -> StatusResult:
+    def status(self, common_config: CommonConfig, strategy_config: HybridStrategyConfig) -> StatusResult:
         """
         Query service status.
         
@@ -189,7 +189,7 @@ class HybridStrategy(Strategy):
         runner_config = self._to_runner_config(common_config, strategy_config)
         return self.runner.status(runner_config)
     
-    def destroy(self, common_config: CommonConfig, strategy_config: HybridVeAgentkitConfig, force: bool = False) -> bool:
+    def destroy(self, common_config: CommonConfig, strategy_config: HybridStrategyConfig, force: bool = False) -> bool:
         """
         Destroy the VE Runtime.
         
@@ -216,7 +216,7 @@ class HybridStrategy(Strategy):
             return agent_name or "agentkit-app"
         return current_cr_repo_name
     
-    def _should_push_to_cr(self, strategy_config: HybridVeAgentkitConfig, cr_repo_name: str) -> tuple:
+    def _should_push_to_cr(self, strategy_config: HybridStrategyConfig, cr_repo_name: str) -> tuple:
         """
         Determine whether to push image to Container Registry.
         
@@ -241,7 +241,7 @@ class HybridStrategy(Strategy):
         
         return True, ""
     
-    def _handle_cr_push(self, result: BuildResult, strategy_config: HybridVeAgentkitConfig,
+    def _handle_cr_push(self, result: BuildResult, strategy_config: HybridStrategyConfig,
                         cr_repo_name: str) -> 'ConfigUpdates':
         """
         Handle pushing image to Container Registry.
@@ -286,7 +286,7 @@ class HybridStrategy(Strategy):
         
         return config_updates
     
-    def _report_cr_skip_reason(self, reason: str, strategy_config: HybridVeAgentkitConfig) -> None:
+    def _report_cr_skip_reason(self, reason: str, strategy_config: HybridStrategyConfig) -> None:
         """Report reason for skipping CR push."""
         if '{{' in strategy_config.cr_instance_name:
             self.reporter.warning(f"⚠️  CR instance name contains unrendered template variables: {strategy_config.cr_instance_name}")
@@ -297,7 +297,7 @@ class HybridStrategy(Strategy):
         else:
             self.reporter.warning(f"⚠️  Invalid CR configuration, skipping push to CR: {reason}")
     
-    def _validate_cr_image_url(self, strategy_config: HybridVeAgentkitConfig) -> DeployResult:
+    def _validate_cr_image_url(self, strategy_config: HybridStrategyConfig) -> DeployResult:
         """
         Validate CR image URL is available.
         
@@ -330,7 +330,7 @@ class HybridStrategy(Strategy):
         )
     
     def _to_builder_config(self, common_config: CommonConfig,
-                           strategy_config: HybridVeAgentkitConfig) -> LocalDockerBuilderConfig:
+                           strategy_config: HybridStrategyConfig) -> LocalDockerBuilderConfig:
         """
         Convert HybridVeAgentkitConfig to LocalDockerBuilderConfig.
         """
@@ -341,7 +341,7 @@ class HybridStrategy(Strategy):
         )
     
     def _to_runner_config(self, common_config: CommonConfig,
-                          strategy_config: HybridVeAgentkitConfig) -> VeAgentkitRunnerConfig:
+                          strategy_config: HybridStrategyConfig) -> VeAgentkitRunnerConfig:
         """
         Convert HybridVeAgentkitConfig to VeAgentkitRunnerConfig.
         """

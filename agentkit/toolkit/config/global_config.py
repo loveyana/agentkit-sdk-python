@@ -301,19 +301,19 @@ def apply_global_config_defaults(
 
     Example:
         >>> # project config has empty cr_instance_name
-        >>> config = HybridVeAgentkitConfig.from_dict({"cr_instance_name": ""})
+        >>> config = HybridStrategyConfig.from_dict({"cr_instance_name": ""})
         >>> # apply_global_config_defaults will fill from global config if set
         >>> # config.cr_instance_name = "my-team-cr-instance" (from global config)
     """
     # Lazy imports to avoid circular dependencies
     try:
-        from .strategy_configs import HybridVeAgentkitConfig, VeAgentkitConfig
+        from .strategy_configs import HybridStrategyConfig, CloudStrategyConfig
     except ImportError as e:
         logger.debug(f"Failed to import strategy config classes, skip applying global config defaults: {e}")
         return config_obj
     
     # Only handle strategy config classes
-    if not isinstance(config_obj, (HybridVeAgentkitConfig, VeAgentkitConfig)):
+    if not isinstance(config_obj, (HybridStrategyConfig, CloudStrategyConfig)):
         return config_obj
     
     try:
@@ -327,7 +327,7 @@ def apply_global_config_defaults(
         }
         
         # For VeAgentkitConfig, also apply TOS-related settings
-        if isinstance(config_obj, VeAgentkitConfig):
+        if isinstance(config_obj, CloudStrategyConfig):
             field_mappings.update({
                 'tos_bucket': ('tos', 'bucket'),
                 'tos_prefix': ('tos', 'prefix'),
