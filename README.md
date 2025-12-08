@@ -35,7 +35,7 @@ AgentKit includes the following modular Services that you can use together or in
 
 AgentKit Runtime is a fully managed service that provides a secure, isolated environment for running AI Agents. It supports the deployment of Agents built with any framework and language, and provides a set of APIs for interacting with the Agents.
 
-**[Runtime Quick Start](https://volcengine.github.io/agentkit-sdk-python/content/4.runtime/1.overview.html)**
+**[Runtime Quick Start](https://volcengine.github.io/agentkit-sdk-python/content/4.runtime/1.runtime_quickstart.html)**
 
 ## AgentKit Tools
 
