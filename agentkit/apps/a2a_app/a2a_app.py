@@ -14,9 +14,10 @@
 
 import logging
 import os
-from typing import Callable, override
-
 import uvicorn
+import inspect
+
+from typing import Callable, override
 from a2a.server.agent_execution import AgentExecutor
 from a2a.server.agent_execution.context import RequestContext
 from a2a.server.apps import A2AStarletteApplication
@@ -25,8 +26,9 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.tasks.task_store import TaskStore
 from a2a.types import AgentCard
+from starlette.requests import Request
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from agentkit.apps.a2a_app.telemetry import telemetry
@@ -75,6 +77,7 @@ class AgentkitA2aApp(BaseAgentkitApp):
 
         self._agent_executor: AgentExecutor | None = None
         self._task_store: TaskStore | None = None
+        self._ping_func: Callable | None = None
 
     def agent_executor(self, **kwargs) -> Callable:
         """Wrap an AgentExecutor class, init it, then bind it to the app instance."""
@@ -136,6 +139,30 @@ class AgentkitA2aApp(BaseAgentkitApp):
         )
         app.routes.append(route)
 
+    def ping(self, func: Callable) -> Callable:
+        """Register a zero-argument health check function and expose it via GET /ping.
+
+        The function must accept no arguments and should return either a string or a dict.
+        The response shape mirrors SimpleApp: {"status": <str|dict>}.
+        """
+        # Ensure zero-argument function similar to SimpleApp
+        if len(list(inspect.signature(func).parameters.keys())) != 0:
+            raise AssertionError(
+                f"Health check function `{func.__name__}` should not receive any arguments."
+            )
+
+        self._ping_func = func
+        return func
+
+    def _format_ping_status(self, result: str | dict) -> dict:
+        # Align behavior with SimpleApp: always wrap into {"status": result}
+        if isinstance(result, (str, dict)):
+            return {"status": result}
+        logger.error(
+            f"Health check function {getattr(self._ping_func, '__name__', 'unknown')} must return `dict` or `str` type."
+        )
+        return {"status": "error", "message": "Invalid response type."}
+
     @override
     def run(self, agent_card: AgentCard, host: str, port: int = 8000):
         if not self._agent_executor:
@@ -154,6 +181,30 @@ class AgentkitA2aApp(BaseAgentkitApp):
                 agent_executor=self._agent_executor, task_store=self._task_store
             ),
         ).build()
+
+        # Register /ping route consistent with SimpleApp behavior
+        async def _ping_handler(request: Request):
+            if not self._ping_func:
+                logger.error("Ping handler function is not set")
+                return Response(status_code=404)
+
+            try:
+                result = (
+                    await self._ping_func()
+                    if inspect.iscoroutinefunction(self._ping_func)
+                    else self._ping_func()
+                )
+                payload = self._format_ping_status(result)
+                return JSONResponse(content=payload, media_type="application/json")
+            except Exception as e:
+                logger.exception("Ping handler function failed: %s", e)
+                return JSONResponse(
+                    content={"status": "error", "message": str(e)},
+                    media_type="application/json",
+                    status_code=500,
+                )
+
+        a2a_app.add_route("/ping", _ping_handler, methods=["GET"])
 
         self.add_env_detect_route(a2a_app)
 
