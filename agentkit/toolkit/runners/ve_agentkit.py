@@ -248,7 +248,28 @@ class VeAgentkitRuntimeRunner(Runner):
                         },
                         timeout=10,
                     )
-                    ping_status = ping_response.status_code == 200
+                    if ping_response.status_code == 200:
+                        ping_status = True
+                    elif ping_response.status_code in (404, 405):
+                        # Fallback: try /health for SimpleApp compatibility
+                        try:
+                            health_response = requests.get(
+                                urljoin(public_endpoint, "health"),
+                                headers={
+                                    "Authorization": f"Bearer {runner_config.runtime_apikey}"
+                                },
+                                timeout=10,
+                            )
+                            if health_response.status_code == 200:
+                                ping_status = True
+                            else:
+                                ping_status = None  # Endpoint reachable but health route not available
+                        except Exception:
+                            # Endpoint reachable (ping returned 404/405), but health check failed
+                            ping_status = None
+                    else:
+                        # Non-200 status indicates server responded but not healthy
+                        ping_status = False
                 except Exception as e:
                     logger.error(f"Failed to check endpoint connectivity: {str(e)}")
                     ping_status = False
@@ -265,11 +286,15 @@ class VeAgentkitRuntimeRunner(Runner):
                 status=status,
                 endpoint_url=public_endpoint,
                 service_id=runner_config.runtime_id,
-                health="healthy"
-                if ping_status
-                else "unhealthy"
-                if ping_status is False
-                else None,
+                health=(
+                    "healthy"
+                    if ping_status is True
+                    else "unhealthy"
+                    if ping_status is False
+                    else "unknown"
+                    if ping_status is None
+                    else None
+                ),
                 metadata={
                     "runtime_id": runner_config.runtime_id,
                     "runtime_name": runtime.name

@@ -63,16 +63,19 @@ runner = Runner(agent=agent)
 class MyAgentExecutor(A2aAgentExecutor):
     pass
 
+@a2a_app.ping
+def ping() -> str:
+    return "pong!"
 
 if __name__ == "__main__":
     from a2a.types import AgentCard, AgentProvider, AgentSkill, AgentCapabilities
     
     agent_card = AgentCard(
-        capabilities=AgentCapabilities(streaming=True),  # 启用流式
+        capabilities=AgentCapabilities(streaming=True),
         description=agent.description,
         name=agent.name,
-        defaultInputModes=["text"],
-        defaultOutputModes=["text"],
+        default_input_modes=["text"],
+        default_output_modes=["text"],
         provider=AgentProvider(organization="veadk", url=""),
         skills=[AgentSkill(id="0", name="chat", description="Chat", tags=["chat"])],
         url="http://0.0.0.0:8000",
